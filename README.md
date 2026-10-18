@@ -7,7 +7,9 @@ A 2D dungeon crawler with RPG elements, written in Go. It currently renders in t
 - Go 1.26 or newer
 - A terminal with at least about 60×20 cells and 256-color support
 
-Alternatively, open the folder in VS Code and choose **Dev Containers: Reopen in Container**. The devcontainer provides Go 1.26 and the Go extension.
+Alternatively, open the folder in VS Code and choose **Dev Containers: Reopen in Container**. The devcontainer provides Go 1.26, the Go extension, and the Claude Code CLI.
+
+If you already have the container open, run **Dev Containers: Rebuild Container** to install Claude Code. Then run `claude` in the container's terminal and follow the sign-in prompts. You can verify the installation with `claude --version`.
 
 ## Build and run
 
