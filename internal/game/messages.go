@@ -64,6 +64,14 @@ func describe(ev Event, viewer entity.EntityID) string {
 		return actor + " dies."
 	case EvLevelChanged:
 		return "You take the stairs to " + ev.Text + "."
+	case EvEquipped:
+		if you {
+			return "You equip the " + ev.Text + "."
+		}
+	case EvUnequipped:
+		if you {
+			return "You take off the " + ev.Text + "."
+		}
 	case EvMessage:
 		if you {
 			return ev.Text

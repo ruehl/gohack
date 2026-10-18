@@ -7,12 +7,14 @@ type RaceDef struct {
 	Bonus Attributes
 }
 
-// ClassDef is a playable class with base attributes and starting gear.
+// ClassDef is a playable class with base attributes, skills and starting items.
 type ClassDef struct {
-	ID    string
-	Name  string
-	Attrs Attributes
-	Gear  []*ItemDef // equipped at creation
+	ID     string
+	Name   string
+	Attrs  Attributes
+	Skills []Skill
+	Gear   []*ItemDef // equipped at creation
+	Pack   []*ItemDef // carried at creation, not worn
 }
 
 var (
@@ -21,6 +23,10 @@ var (
 	Knight = &ClassDef{
 		ID: "knight", Name: "Knight",
 		Attrs: Attributes{Stamina: 14, Strength: 15, Dexterity: 10, Intelligence: 8},
-		Gear:  []*ItemDef{ChainMail},
+		Gear:  []*ItemDef{ChainMail, LongSword, WoodenShield},
+		Pack: []*ItemDef{
+			Dagger, Greatsword, CopperRing, CopperRing, LeatherCap, BoneAmulet,
+			LeatherGloves, LeatherGreaves, LeatherBoots,
+		},
 	}
 )

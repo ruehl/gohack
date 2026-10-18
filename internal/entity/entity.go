@@ -40,6 +40,7 @@ type Entity struct {
 	HP, MaxHP   int
 	Disposition Disposition
 
+	Skills    map[Skill]bool
 	Inventory Inventory
 	Equipment map[Slot]*Item // worn items; every one is also in Inventory
 
@@ -50,12 +51,15 @@ type Entity struct {
 // IsDead reports whether the entity has no hitpoints left.
 func (e *Entity) IsDead() bool { return e.HP <= 0 }
 
-// Equip adds the item to the inventory and wears it in its slot.
-func (e *Entity) Equip(it *Item) {
-	e.Inventory.Add(it)
-	if it.Def.Slot != SlotNone {
-		e.Equipment[it.Def.Slot] = it
+// Has reports whether the entity has the skill.
+func (e *Entity) Has(s Skill) bool { return e.Skills[s] }
+
+func skillSet(skills []Skill) map[Skill]bool {
+	set := make(map[Skill]bool, len(skills))
+	for _, s := range skills {
+		set[s] = true
 	}
+	return set
 }
 
 // ArmorClass is 10 plus the armor bonus of everything worn.
@@ -76,12 +80,16 @@ func NewPlayer(name string, race *RaceDef, class *ClassDef) *Entity {
 		Name: name, Template: "player", Glyph: '@', IsPlayer: true,
 		Race: race, Class: class,
 		Attrs:     class.Attrs.Add(race.Bonus),
+		Skills:    skillSet(class.Skills),
 		Equipment: map[Slot]*Item{},
 	}
 	e.MaxHP = MaxHPFor(e.Attrs)
 	e.HP = e.MaxHP
 	for _, g := range class.Gear {
 		e.Equip(&Item{Def: g})
+	}
+	for _, p := range class.Pack {
+		e.Inventory.Add(&Item{Def: p})
 	}
 	return e
 }

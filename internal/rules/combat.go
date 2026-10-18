@@ -22,16 +22,28 @@ type AttackResult struct {
 	Damage int
 }
 
-// BareHands resolves an unarmed attack (placeholder until the combat system is designed):
-// hit if d20 + DEX mod >= target AC; damage 1d2 + STR mod, at least 1.
+// BareHands is the damage of an unarmed attack.
+var BareHands = entity.Dice{N: 1, Sides: 2}
+
+// Roll sums the dice.
+func Roll(d entity.Dice, rng RNG) int {
+	total := 0
+	for range d.N {
+		total += rng.IntN(d.Sides) + 1
+	}
+	return total
+}
+
+// Attack resolves one attack (placeholder until the combat system is designed):
+// hit if d20 + DEX mod >= target AC; damage dmg + STR mod, at least 1.
 // It does not modify the defender.
-func BareHands(att, def *entity.Entity, rng RNG) AttackResult {
+func Attack(att, def *entity.Entity, dmg entity.Dice, rng RNG) AttackResult {
 	roll := rng.IntN(20) + 1
 	res := AttackResult{Roll: roll}
 	if roll+entity.Mod(att.Attrs.Dexterity) < def.ArmorClass() {
 		return res
 	}
 	res.Hit = true
-	res.Damage = max(1, rng.IntN(2)+1+entity.Mod(att.Attrs.Strength))
+	res.Damage = max(1, Roll(dmg, rng)+entity.Mod(att.Attrs.Strength))
 	return res
 }

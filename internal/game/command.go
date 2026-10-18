@@ -3,7 +3,10 @@
 // Events, and frontends read a per-player View.
 package game
 
-import "gohack/internal/geom"
+import (
+	"gohack/internal/entity"
+	"gohack/internal/geom"
+)
 
 // Command is an action an entity asks to perform.
 type Command interface{ isCommand() }
@@ -17,6 +20,17 @@ type AttackCmd struct{ Dir geom.Dir }
 // UseStairsCmd takes the stairs on the actor's current tile.
 type UseStairsCmd struct{}
 
+// EquipCmd wears the carried item at index Item of the actor's inventory in Slot.
+type EquipCmd struct {
+	Item int
+	Slot entity.Slot
+}
+
+// UnequipCmd takes off whatever is worn in Slot.
+type UnequipCmd struct{ Slot entity.Slot }
+
 func (MoveCmd) isCommand()      {}
 func (AttackCmd) isCommand()    {}
 func (UseStairsCmd) isCommand() {}
+func (EquipCmd) isCommand()     {}
+func (UnequipCmd) isCommand()   {}

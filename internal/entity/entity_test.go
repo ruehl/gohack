@@ -12,7 +12,7 @@ func TestMod(t *testing.T) {
 
 func TestKnightAndGoblin(t *testing.T) {
 	k := NewPlayer("Hero", Human, Knight)
-	if k.ArmorClass() != 15 || k.MaxHP != 24 || k.HP != 24 || k.IsDead() {
+	if k.ArmorClass() != 16 || k.MaxHP != 24 || k.HP != 24 || k.IsDead() {
 		t.Fatalf("knight: ac=%d maxhp=%d hp=%d", k.ArmorClass(), k.MaxHP, k.HP)
 	}
 	g := NPCTemplates["goblin"].Spawn()

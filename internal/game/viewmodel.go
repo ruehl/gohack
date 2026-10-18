@@ -44,12 +44,34 @@ type HUD struct {
 	Turn                     int
 }
 
+// SlotView is one equipment slot; Item is empty when nothing is worn there.
+type SlotView struct {
+	Slot entity.Slot
+	Item string
+}
+
+// ItemView is one carried item. Worn is the slot it is worn in (SlotNone if
+// carried only) and Fits lists the slots it could be worn in.
+type ItemView struct {
+	Name string
+	Worn entity.Slot
+	Fits []entity.Slot
+}
+
+// Gear is the player's equipment. Items are in inventory order, so an index
+// into Items is the Item of an EquipCmd.
+type Gear struct {
+	Slots []SlotView
+	Items []ItemView
+}
+
 // View is everything a frontend needs to draw one player's screen. The
 // player is always at cell (W/2, H/2).
 type View struct {
 	W, H     int
 	Cells    []Cell // row-major, len W*H
 	HUD      HUD
+	Gear     Gear
 	Messages []string
 	Dead     bool
 }
@@ -94,7 +116,29 @@ func (g *Game) BuildView(id entity.EntityID, w, h int) *View {
 	if e.Class != nil {
 		v.HUD.Class = e.Class.Name
 	}
+	v.Gear = gearView(e)
 	log := g.logs[id]
 	v.Messages = log[max(0, len(log)-MessageLines):]
 	return v
+}
+
+func gearView(e *entity.Entity) Gear {
+	var gv Gear
+	for _, s := range entity.Slots {
+		sv := SlotView{Slot: s}
+		if it := e.Equipment[s]; it != nil {
+			sv.Item = it.Def.Name
+		}
+		gv.Slots = append(gv.Slots, sv)
+	}
+	for _, it := range e.Inventory.Items {
+		iv := ItemView{Name: it.Def.Name, Worn: e.SlotOf(it)}
+		for _, s := range entity.Slots {
+			if e.Fits(it, s) {
+				iv.Fits = append(iv.Fits, s)
+			}
+		}
+		gv.Items = append(gv.Items, iv)
+	}
+	return gv
 }
