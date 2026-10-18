@@ -45,6 +45,8 @@ Walking into a closed door opens it. Walking into an NPC does not attack it.
 ```sh
 go vet ./...
 go test ./...
+golangci-lint run ./...            # linters; config in .golangci.yml
+golangci-lint fmt ./...            # gofmt + goimports
 go test -bench . ./internal/fov/   # line-of-sight benchmark
 ```
 

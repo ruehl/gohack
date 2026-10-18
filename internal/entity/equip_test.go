@@ -16,6 +16,14 @@ func carry(e *Entity, d *ItemDef) *Item {
 	return it
 }
 
+// wear equips a carried item that must fit.
+func wear(t *testing.T, e *Entity, it *Item, s Slot) {
+	t.Helper()
+	if _, err := e.EquipAt(it, s); err != nil {
+		t.Fatalf("EquipAt(%s, %d): %v", it.Def.ID, s, err)
+	}
+}
+
 func TestFits(t *testing.T) {
 	e := bare()
 	dagger, sword := &Item{Def: Dagger}, &Item{Def: Greatsword}
@@ -41,8 +49,8 @@ func TestFits(t *testing.T) {
 func TestEquipAtTwoHandedClearsHands(t *testing.T) {
 	e := bare()
 	sword, shield, great := carry(e, LongSword), carry(e, WoodenShield), carry(e, Greatsword)
-	e.EquipAt(sword, SlotMainHand)
-	e.EquipAt(shield, SlotOffHand)
+	wear(t, e, sword, SlotMainHand)
+	wear(t, e, shield, SlotOffHand)
 	removed, err := e.EquipAt(great, SlotMainHand)
 	if err != nil || !slices.Equal(removed, []*Item{sword, shield}) {
 		t.Fatalf("removed=%v err=%v", removed, err)
@@ -58,7 +66,7 @@ func TestEquipAtTwoHandedClearsHands(t *testing.T) {
 func TestEquipAtShieldClearsTwoHanded(t *testing.T) {
 	e := bare()
 	great, shield := carry(e, Greatsword), carry(e, WoodenShield)
-	e.EquipAt(great, SlotMainHand)
+	wear(t, e, great, SlotMainHand)
 	removed, err := e.EquipAt(shield, SlotOffHand)
 	if err != nil || !slices.Equal(removed, []*Item{great}) || e.Equipment[SlotMainHand] != nil {
 		t.Fatalf("removed=%v err=%v equipment=%v", removed, err, e.Equipment)
@@ -68,7 +76,7 @@ func TestEquipAtShieldClearsTwoHanded(t *testing.T) {
 func TestEquipAtKeepsOneHandedWeaponWithShield(t *testing.T) {
 	e := bare()
 	sword, shield := carry(e, LongSword), carry(e, WoodenShield)
-	e.EquipAt(sword, SlotMainHand)
+	wear(t, e, sword, SlotMainHand)
 	if removed, err := e.EquipAt(shield, SlotOffHand); err != nil || len(removed) != 0 {
 		t.Fatalf("removed=%v err=%v", removed, err)
 	}
@@ -77,8 +85,8 @@ func TestEquipAtKeepsOneHandedWeaponWithShield(t *testing.T) {
 func TestEquipAtMovesRing(t *testing.T) {
 	e := bare()
 	a, b := carry(e, CopperRing), carry(e, CopperRing)
-	e.EquipAt(a, SlotRing1)
-	e.EquipAt(b, SlotRing2)
+	wear(t, e, a, SlotRing1)
+	wear(t, e, b, SlotRing2)
 	removed, err := e.EquipAt(a, SlotRing2)
 	if err != nil || !slices.Equal(removed, []*Item{b}) {
 		t.Fatalf("removed=%v err=%v", removed, err)
@@ -91,7 +99,7 @@ func TestEquipAtMovesRing(t *testing.T) {
 func TestEquipAtErrorsChangeNothing(t *testing.T) {
 	e := bare()
 	sword, ring := carry(e, LongSword), carry(e, CopperRing)
-	e.EquipAt(sword, SlotMainHand)
+	wear(t, e, sword, SlotMainHand)
 	for _, c := range []struct {
 		it   *Item
 		slot Slot
@@ -114,7 +122,7 @@ func TestEquipAtErrorsChangeNothing(t *testing.T) {
 func TestUnequip(t *testing.T) {
 	e := bare()
 	helmet := carry(e, LeatherCap)
-	e.EquipAt(helmet, SlotHead)
+	wear(t, e, helmet, SlotHead)
 	if got := e.Unequip(SlotHead); got != helmet || e.Equipment[SlotHead] != nil || len(e.Inventory.Items) != 1 {
 		t.Fatalf("Unequip = %v, equipment = %v", got, e.Equipment)
 	}

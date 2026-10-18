@@ -41,6 +41,19 @@
       "problemMatcher": ["$go"]
     },
     {
+      "label": "Lint",
+      "type": "shell",
+      "command": "golangci-lint run ./...",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": ["$go"]
+    },
+    {
       "label": "Test",
       "type": "shell",
       "command": "go test ./...",

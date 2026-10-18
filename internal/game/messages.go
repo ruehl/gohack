@@ -17,7 +17,7 @@ func (g *Game) record(evs []Event) {
 		}
 		for _, ev := range evs {
 			involved := ev.Actor == pid || ev.Target == pid
-			if !involved && !(ev.Level == viewer.Level && p.visible.Has(ev.Pos.X, ev.Pos.Y)) {
+			if !involved && (ev.Level != viewer.Level || !p.visible.Has(ev.Pos.X, ev.Pos.Y)) {
 				continue
 			}
 			if line := describe(ev, pid); line != "" {

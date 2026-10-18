@@ -11,11 +11,15 @@ The owner wants tight control over game design. Build only what is asked. If a f
 ```sh
 go run ./cmd/gohack                  # play (needs a real interactive terminal)
 go vet ./... && go test ./...        # check everything
+golangci-lint run ./...              # lint (config: .golangci.yml); must report 0 issues
+golangci-lint fmt ./...              # format (gofmt + goimports)
 go test ./internal/game -run TestDeath -v   # a single test
 go test -bench . ./internal/fov/     # line-of-sight benchmark
 ```
 
 The game cannot be driven through a plain pipe. To exercise the UI headlessly, run the built binary under a pty and read the screen with a terminal emulator.
+
+**Linting is mandatory.** Before finishing any change that touches Go code (and before every commit), run `golangci-lint run ./...` and fix every issue it reports; the result must be `0 issues`. Fix the code rather than silencing the linter: do not add `//nolint` comments, disable linters or loosen `.golangci.yml` unless the owner asks for it.
 
 ## Architecture
 

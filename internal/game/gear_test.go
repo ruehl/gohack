@@ -21,6 +21,16 @@ func itemIndex(t *testing.T, e *entity.Entity, name string) int {
 	return -1
 }
 
+// wieldDaggerOffHand teaches p dual-wielding and swaps the shield for the dagger.
+func wieldDaggerOffHand(t *testing.T, p *entity.Entity) {
+	t.Helper()
+	p.Skills[entity.DualWielding] = true
+	p.Unequip(entity.SlotOffHand)
+	if _, err := p.EquipAt(p.Inventory.Items[itemIndex(t, p, "dagger")], entity.SlotOffHand); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func kinds(evs []Event) []EventKind {
 	var ks []EventKind
 	for _, ev := range evs {
@@ -33,11 +43,7 @@ func TestDualWielderAttacksTwice(t *testing.T) {
 	// Long sword: roll 20, 1d8 rolls IntN 1 -> 2, +2 STR = 4. Dagger: roll 20, 1d4 rolls IntN 0 -> 1, +2 = 3.
 	g, p := newGame(t, &seq{19, 1, 19, 0}, map[string]string{"a": duel})
 	gob := g.EntityAt("a", geom.Point{X: 2, Y: 1})
-	p.Skills[entity.DualWielding] = true
-	p.Unequip(entity.SlotOffHand) // the shield
-	if _, err := p.EquipAt(p.Inventory.Items[itemIndex(t, p, "dagger")], entity.SlotOffHand); err != nil {
-		t.Fatal(err)
-	}
+	wieldDaggerOffHand(t, p)
 	evs := g.Submit(p.ID, AttackCmd{geom.E})
 	var mine []Event
 	for _, ev := range evs {
@@ -57,9 +63,7 @@ func TestDualWielderStopsWhenTargetDies(t *testing.T) {
 	g, p := newGame(t, &seq{19, 1, 19, 0}, map[string]string{"a": duel})
 	gob := g.EntityAt("a", geom.Point{X: 2, Y: 1})
 	gob.HP = 1
-	p.Skills[entity.DualWielding] = true
-	p.Unequip(entity.SlotOffHand)
-	p.EquipAt(p.Inventory.Items[itemIndex(t, p, "dagger")], entity.SlotOffHand)
+	wieldDaggerOffHand(t, p)
 	evs := g.Submit(p.ID, AttackCmd{geom.E})
 	if want := []EventKind{EvAttack, EvDied}; !slices.Equal(kinds(evs), want) {
 		t.Fatalf("events = %v, want %v", kinds(evs), want)
@@ -117,9 +121,9 @@ func TestRefusedGearChangesAreFree(t *testing.T) {
 	if p.Equipment[entity.SlotMainHand].Def != entity.LongSword || p.Equipment[entity.SlotOffHand].Def != entity.WoodenShield {
 		t.Fatal("refused changes must not alter the equipment")
 	}
-	msgs := g.BuildView(p.ID, 9, 5).Messages
-	if !strings.Contains(strings.Join(msgs, "|"), "The copper ring doesn't fit there.") {
-		t.Fatalf("messages = %v", msgs)
+	// The cases run in map order and the view shows only the last few lines, so read the whole log.
+	if log := g.logs[p.ID]; !strings.Contains(strings.Join(log, "|"), "The copper ring doesn't fit there.") {
+		t.Fatalf("log = %v", log)
 	}
 }
 
