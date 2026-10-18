@@ -31,15 +31,22 @@ Run the game in a real terminal. It needs an interactive TTY, so it will not wor
 | `W` `A` `S` `D`      | Move (also arrow keys)                      |
 | `F`, then a direction | Attack the adjacent tile in that direction  |
 | `E`                  | Take the stairs you are standing on         |
+| `I`                  | Open the gear screen (see below)            |
 | `Q` / `Esc`          | Quit (`Esc` first cancels a pending attack) |
 
 Walking into a closed door opens it. Walking into an NPC does not attack it.
+
+### Gear screen
+
+`W`/`S` or the arrows move the cursor, `Enter` picks a slot and then an item for it (`(nothing)` takes the slot's item off), `Esc` steps back and closes the screen, `I` closes it at once. Each change takes a turn. Slots: head, neck, two rings, body, hands, legs, feet, main hand and off hand. A two-handed weapon needs both hands, and a second one-handed weapon in the off hand needs the `dual_wielding` skill; a dual-wielder attacks once with each weapon.
 
 ## Test
 
 ```sh
 go vet ./...
 go test ./...
+golangci-lint run ./...            # linters; config in .golangci.yml
+golangci-lint fmt ./...            # gofmt + goimports
 go test -bench . ./internal/fov/   # line-of-sight benchmark
 ```
 

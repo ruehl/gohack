@@ -37,7 +37,7 @@ func Run(g *game.Game, player entity.EntityID) error {
 			if v.Dead {
 				return nil
 			}
-			cmd, quit := in.Handle(ev)
+			cmd, quit := in.Handle(ev, v)
 			if quit {
 				return nil
 			}

@@ -101,6 +101,10 @@ func (g *Game) Submit(actor entity.EntityID, cmd Command) []Event {
 		evs, spent = g.attackDir(e, c.Dir)
 	case UseStairsCmd:
 		evs, spent = g.useStairs(e)
+	case EquipCmd:
+		evs, spent = g.equip(e, c)
+	case UnequipCmd:
+		evs, spent = g.unequip(e, c.Slot)
 	}
 	if spent {
 		evs = append(evs, g.npcPhase()...)
@@ -150,25 +154,83 @@ func (g *Game) attackDir(e *entity.Entity, dir geom.Dir) ([]Event, bool) {
 	return g.attack(e, target), true
 }
 
-// attack resolves a bare-hands attack and removes defeated NPCs from the world.
+// attack attacks once with each held weapon (bare hands if there is none),
+// stopping when the defender dies, and removes defeated NPCs from the world.
 func (g *Game) attack(att, def *entity.Entity) []Event {
 	if att.IsPlayer && !def.IsPlayer {
 		def.Disposition = entity.Hostile // attacked NPCs turn hostile, even friendly ones
 	}
-	res := rules.BareHands(att, def, g.rng)
-	ev := g.event(EvAttack, att, def, def.Pos)
-	ev.Hit, ev.Damage = res.Hit, res.Damage
-	evs := []Event{ev}
-	if res.Hit {
-		def.HP -= res.Damage
+	dmg := []entity.Dice{rules.BareHands}
+	if ws := att.Weapons(); len(ws) > 0 {
+		dmg = dmg[:0]
+		for _, w := range ws {
+			dmg = append(dmg, w.Def.Damage)
+		}
 	}
-	if def.IsDead() {
-		evs = append(evs, g.event(EvDied, def, nil, def.Pos))
-		if !def.IsPlayer {
-			g.remove(def)
+	var evs []Event
+	for _, d := range dmg {
+		res := rules.Attack(att, def, d, g.rng)
+		ev := g.event(EvAttack, att, def, def.Pos)
+		ev.Hit, ev.Damage = res.Hit, res.Damage
+		evs = append(evs, ev)
+		if res.Hit {
+			def.HP -= res.Damage
+		}
+		if def.IsDead() {
+			evs = append(evs, g.event(EvDied, def, nil, def.Pos))
+			if !def.IsPlayer {
+				g.remove(def)
+			}
+			break
 		}
 	}
 	return evs
+}
+
+// equip wears an inventory item in a slot. Items that had to come off are
+// reported first. A refused change costs no turn.
+func (g *Game) equip(e *entity.Entity, c EquipCmd) ([]Event, bool) {
+	if c.Item < 0 || c.Item >= len(e.Inventory.Items) {
+		return g.refuse(e, "You don't have that."), false
+	}
+	it := e.Inventory.Items[c.Item]
+	removed, err := e.EquipAt(it, c.Slot)
+	switch err {
+	case nil:
+	case entity.ErrDoesNotFit:
+		return g.refuse(e, "The "+it.Def.Name+" doesn't fit there."), false
+	case entity.ErrAlreadyWorn:
+		return g.refuse(e, "You already wear the "+it.Def.Name+" there."), false
+	default:
+		return g.refuse(e, "You can't do that."), false
+	}
+	var evs []Event
+	for _, r := range removed {
+		ev := g.event(EvUnequipped, e, nil, e.Pos)
+		ev.Text = r.Def.Name
+		evs = append(evs, ev)
+	}
+	ev := g.event(EvEquipped, e, nil, e.Pos)
+	ev.Text = it.Def.Name
+	return append(evs, ev), true
+}
+
+// unequip takes off the item in a slot. An empty slot costs no turn.
+func (g *Game) unequip(e *entity.Entity, s entity.Slot) ([]Event, bool) {
+	it := e.Unequip(s)
+	if it == nil {
+		return g.refuse(e, "Nothing is worn there."), false
+	}
+	ev := g.event(EvUnequipped, e, nil, e.Pos)
+	ev.Text = it.Def.Name
+	return []Event{ev}, true
+}
+
+// refuse is the event list for a command that was rejected; Text is shown to e only.
+func (g *Game) refuse(e *entity.Entity, text string) []Event {
+	ev := g.event(EvMessage, e, nil, e.Pos)
+	ev.Text = text
+	return []Event{ev}
 }
 
 func (g *Game) remove(e *entity.Entity) {
@@ -178,11 +240,7 @@ func (g *Game) remove(e *entity.Entity) {
 }
 
 func (g *Game) useStairs(e *entity.Entity) ([]Event, bool) {
-	fail := func(text string) ([]Event, bool) {
-		ev := g.event(EvMessage, e, nil, e.Pos)
-		ev.Text = text
-		return []Event{ev}, false
-	}
+	fail := func(text string) ([]Event, bool) { return g.refuse(e, text), false }
 	p, ok := g.World.Level(e.Level).Portals[e.Pos]
 	if !ok {
 		return fail("There are no stairs here.")

@@ -4,18 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working agreement
 
-The owner wants tight control over game design. Build only what is asked. If a feature turns out to be strictly required but was not decided on, ask before adding it. Examples of things deliberately not built yet: inventory UI or pickup, NPC movement, weapons, other portal types, other races/classes/NPCs. Combat (`internal/rules/combat.go`) is a placeholder until the combat system is designed.
+The owner wants tight control over game design. Build only what is asked. If a feature turns out to be strictly required but was not decided on, ask before adding it. Examples of things deliberately not built yet: item pickup or drop, NPC movement, ring/amulet effects, other portal types, other races/classes/NPCs. Combat (`internal/rules/combat.go`) is a placeholder until the combat system is designed.
 
 ## Commands
 
 ```sh
 go run ./cmd/gohack                  # play (needs a real interactive terminal)
 go vet ./... && go test ./...        # check everything
+golangci-lint run ./...              # lint (config: .golangci.yml); must report 0 issues
+golangci-lint fmt ./...              # format (gofmt + goimports)
 go test ./internal/game -run TestDeath -v   # a single test
 go test -bench . ./internal/fov/     # line-of-sight benchmark
 ```
 
 The game cannot be driven through a plain pipe. To exercise the UI headlessly, run the built binary under a pty and read the screen with a terminal emulator.
+
+**Linting is mandatory.** Before finishing any change that touches Go code (and before every commit), run `golangci-lint run ./...` and fix every issue it reports; the result must be `0 issues`. Fix the code rather than silencing the linter: do not add `//nolint` comments, disable linters or loosen `.golangci.yml` unless the owner asks for it.
 
 ## Architecture
 
@@ -27,6 +31,7 @@ The core rule: **the simulation knows nothing about input or rendering**, so the
 - **Line of sight**: `internal/fov` is symmetric shadowcasting in exact integer math. Perception is per player (`perception.go`): a `visible` bitgrid for the current level and a `seen` bitgrid per level. Remembered tiles are drawn using the tile's *current* type, not what was last seen.
 - **Levels and portals**: levels are ASCII files embedded from `internal/world/levels/`. A `portal:` header line is declared in one file only; `World.link` creates both ends and validates that both are stair tiles. Map glyphs for spawns (e.g. `g`) map to NPC template IDs in `spawnGlyphs` (`loader.go`), which must exist in `entity.NPCTemplates`. Max level size is 1024×1024. Exactly one `@` player start across all levels.
 - **Rules are injected and deterministic**: `rules.RNG` is an interface; `Game` takes one. Tests use a scripted `seq` RNG that returns fixed values (see `game_test.go`, `combat_test.go`), and build worlds from in-memory level text with `testing/fstest.MapFS` and `world.Load`.
+- **Equipment**: slots, wear rules and skills live in `internal/entity` (`equip.go`, `skill.go`): `Fits` says what may go where, `EquipAt` swaps out anything in the way (items stay in the inventory), `Equip` auto-picks a slot for starting gear. Frontends never repeat these rules: `View.Gear` carries each carried item's `Fits` slots, and the gear screen sends `EquipCmd`/`UnequipCmd` (each successful change costs a turn). A weapon's damage dice are on its `ItemDef`; an attacker attacks once per held weapon (`Entity.Weapons`), or bare-handed. A weapon in the off hand needs the `dual_wielding` skill.
 - **Stats**: modifiers are `(attr-10)/2` rounded down (`entity.Mod`); max HP is `10 + STA`; AC is `10 +` armor bonuses of equipped items. NPC disposition is Hostile/Neutral/Friendly towards the player; only hostile NPCs attack, and a player attacking any NPC turns it hostile.
 
 ## Environment

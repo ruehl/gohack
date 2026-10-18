@@ -17,7 +17,7 @@ func (g *Game) record(evs []Event) {
 		}
 		for _, ev := range evs {
 			involved := ev.Actor == pid || ev.Target == pid
-			if !involved && !(ev.Level == viewer.Level && p.visible.Has(ev.Pos.X, ev.Pos.Y)) {
+			if !involved && (ev.Level != viewer.Level || !p.visible.Has(ev.Pos.X, ev.Pos.Y)) {
 				continue
 			}
 			if line := describe(ev, pid); line != "" {
@@ -64,6 +64,14 @@ func describe(ev Event, viewer entity.EntityID) string {
 		return actor + " dies."
 	case EvLevelChanged:
 		return "You take the stairs to " + ev.Text + "."
+	case EvEquipped:
+		if you {
+			return "You equip the " + ev.Text + "."
+		}
+	case EvUnequipped:
+		if you {
+			return "You take off the " + ev.Text + "."
+		}
 	case EvMessage:
 		if you {
 			return ev.Text

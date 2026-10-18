@@ -16,7 +16,9 @@ const (
 	EvAttack
 	EvDied
 	EvLevelChanged
-	EvMessage // Text is shown to Actor only
+	EvMessage    // Text is shown to Actor only
+	EvEquipped   // Text is the item name
+	EvUnequipped // Text is the item name
 )
 
 // Event describes something that happened during a turn.

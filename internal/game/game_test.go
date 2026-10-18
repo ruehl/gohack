@@ -120,7 +120,7 @@ const duel = `id: a
 `
 
 func TestAttackAndHostileGoblin(t *testing.T) {
-	// Knight: roll 20 (IntN 19) hits AC 12; dmg 1+IntN(1)=1+1+2 = 4. Goblin 18 HP -> 14.
+	// Knight: roll 20 (IntN 19) hits AC 12; long sword 1d8 rolls IntN 1 -> 2, +2 STR = 4. Goblin 18 HP -> 14.
 	// Goblin turn: roll 1 (IntN 0) misses.
 	g, p := newGame(t, &seq{19, 1, 0}, map[string]string{"a": duel})
 	gob := g.EntityAt("a", geom.Point{X: 2, Y: 1})

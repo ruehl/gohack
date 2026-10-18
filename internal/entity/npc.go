@@ -7,6 +7,7 @@ type NPCTemplate struct {
 	Glyph       rune
 	Attrs       Attributes
 	Disposition Disposition
+	Skills      []Skill
 	Gear        []*ItemDef // equipped at spawn
 }
 
@@ -16,7 +17,7 @@ var NPCTemplates = map[string]*NPCTemplate{
 		ID: "goblin", Name: "goblin", Glyph: 'g',
 		Attrs:       Attributes{Stamina: 8, Strength: 8, Dexterity: 12, Intelligence: 6},
 		Disposition: Hostile,
-		Gear:        []*ItemDef{RaggedLeather},
+		Gear:        []*ItemDef{RaggedLeather, Dagger},
 	},
 }
 
@@ -25,6 +26,7 @@ func (t *NPCTemplate) Spawn() *Entity {
 	e := &Entity{
 		Name: t.Name, Template: t.ID, Glyph: t.Glyph,
 		Attrs: t.Attrs, Disposition: t.Disposition,
+		Skills:    skillSet(t.Skills),
 		Equipment: map[Slot]*Item{},
 	}
 	e.MaxHP = MaxHPFor(e.Attrs)

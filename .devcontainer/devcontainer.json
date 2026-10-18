@@ -2,7 +2,8 @@
   "name": "gohack",
   "image": "mcr.microsoft.com/devcontainers/go:1.26-bookworm",
   "features": {
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
     "vscode": {

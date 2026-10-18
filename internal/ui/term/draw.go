@@ -19,6 +19,19 @@ var (
 	styleRemember = tcell.StyleDefault.Foreground(tcell.NewRGBColor(70, 70, 80))
 	styleWarn     = tcell.StyleDefault.Foreground(tcell.ColorRed).Bold(true)
 
+	slotLabel = map[entity.Slot]string{
+		entity.SlotHead:     "Head",
+		entity.SlotNeck:     "Neck",
+		entity.SlotRing1:    "Ring 1",
+		entity.SlotRing2:    "Ring 2",
+		entity.SlotBody:     "Body",
+		entity.SlotHands:    "Hands",
+		entity.SlotLegs:     "Legs",
+		entity.SlotFeet:     "Feet",
+		entity.SlotMainHand: "Main hand",
+		entity.SlotOffHand:  "Off hand",
+	}
+
 	tileStyle = map[world.TileType]tcell.Style{
 		world.Floor:      tcell.StyleDefault.Foreground(tcell.NewRGBColor(130, 130, 130)),
 		world.Wall:       tcell.StyleDefault.Foreground(tcell.NewRGBColor(200, 200, 200)),
@@ -75,6 +88,10 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 		}
 	}
 
+	if in.GearOpen() {
+		drawGear(s, v, in, mapW, mapH)
+	}
+
 	// HUD
 	hx, h := mapW+1, v.HUD
 	for y := 0; y < mapH; y++ {
@@ -107,6 +124,7 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 	} else {
 		put(styleDim, "WASD/arrows move")
 		put(styleDim, "F attack  E stairs")
+		put(styleDim, "I gear")
 		put(styleDim, "Q quit")
 	}
 
@@ -119,6 +137,52 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 		drawDeath(s, sw, sh)
 	}
 	s.Show()
+}
+
+// drawGear covers the map area with the gear screen: the slot list, or the
+// items that fit the chosen slot.
+func drawGear(s tcell.Screen, v *game.View, in *Input, mapW, mapH int) {
+	for y := 0; y < mapH; y++ {
+		for x := 0; x < mapW; x++ {
+			s.SetContent(x, y, ' ', nil, styleText)
+		}
+	}
+	m := &in.gear
+	var title, hint string
+	var rows []string
+	if m.picking {
+		title, hint = "Equip: "+slotLabel[m.slot], "Enter equip  Esc back  I close"
+		for _, c := range choices(&v.Gear, m.slot) {
+			row := c.Name
+			if c.Item >= 0 {
+				if w := v.Gear.Items[c.Item].Worn; w != entity.SlotNone {
+					row += " (worn: " + slotLabel[w] + ")"
+				}
+			}
+			rows = append(rows, row)
+		}
+		if len(rows) == 0 {
+			rows = append(rows, "nothing fits here")
+		}
+	} else {
+		title, hint = "Equipment", "Enter choose slot  Esc close"
+		for _, sl := range v.Gear.Slots {
+			item := sl.Item
+			if item == "" {
+				item = "-"
+			}
+			rows = append(rows, fmt.Sprintf("%-11s%s", slotLabel[sl.Slot], item))
+		}
+	}
+	putString(s, 2, 1, mapW-2, styleHeading, title)
+	for i, r := range rows {
+		style := styleText
+		if i == m.cursor {
+			style = style.Reverse(true)
+		}
+		putString(s, 2, 3+i, mapW-2, style, r)
+	}
+	putString(s, 2, 4+len(rows), mapW-2, styleDim, hint)
 }
 
 func drawDeath(s tcell.Screen, sw, sh int) {
