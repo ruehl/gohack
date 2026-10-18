@@ -6,7 +6,7 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": ["golang.go"]
+      "extensions": ["golang.go", "spmeesseman.vscode-taskexplorer"]
     }
   },
   "postCreateCommand": "go mod download"
