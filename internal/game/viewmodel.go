@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"gohack/internal/entity"
 	"gohack/internal/geom"
 	"gohack/internal/world"
@@ -28,11 +30,16 @@ type ActorView struct {
 }
 
 // Cell is one tile of the viewport. Tile is Void for unseen cells; Actor is
-// set only for visible cells.
+// set only for visible cells. Light is the color the tile is lit with; zero
+// means no light source reaches the side of it the player sees.
 type Cell struct {
 	Tile  world.TileType
 	Vis   VisState
 	Actor *ActorView
+	Light world.RGB
+	// Source is the light source standing on the tile, for visible and
+	// remembered cells; it decides how the tile looks.
+	Source *world.LightDef
 }
 
 // HUD holds the player's stats for display.
@@ -78,8 +85,10 @@ type View struct {
 
 func (v *View) At(x, y int) Cell { return v.Cells[y*v.W+x] }
 
-// BuildView renders the world around a player into a w×h viewport centered on them.
-func (g *Game) BuildView(id entity.EntityID, w, h int) *View {
+// BuildView renders the world around a player into a w×h viewport centered on
+// them. at is the animation clock for flickering lights; the simulation never
+// reads the wall clock itself.
+func (g *Game) BuildView(id entity.EntityID, w, h int, at time.Duration) *View {
 	e := g.entities[id]
 	p := g.views[id]
 	if e == nil || p == nil || w <= 0 || h <= 0 {
@@ -103,8 +112,15 @@ func (g *Game) BuildView(id entity.EntityID, w, h int) *View {
 			case seen.Has(mp.X, mp.Y):
 				c.Vis, c.Tile = Remembered, l.At(mp)
 			}
+			if c.Vis != Unseen && c.Tile == world.LightSource {
+				if li := l.LightAt(mp); li != nil {
+					c.Source = li.Def
+				}
+			}
 		}
 	}
+
+	g.addLight(v, l, p, e.Pos, origin, at)
 
 	v.HUD = HUD{
 		Name: e.Name, Level: l.Name, Attrs: e.Attrs,

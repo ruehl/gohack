@@ -96,7 +96,7 @@ func TestEquipGreatswordCostsTurn(t *testing.T) {
 	if g.Turn != 1 || p.ArmorClass() != ac-1 {
 		t.Fatalf("turn=%d ac=%d (was %d)", g.Turn, p.ArmorClass(), ac)
 	}
-	log := strings.Join(g.BuildView(p.ID, 9, 5).Messages, "|")
+	log := strings.Join(g.BuildView(p.ID, 9, 5, 0).Messages, "|")
 	if !strings.Contains(log, "You take off the wooden shield.") || !strings.Contains(log, "You equip the greatsword.") {
 		t.Fatalf("messages = %q", log)
 	}
@@ -140,7 +140,7 @@ func TestUnequipCostsTurn(t *testing.T) {
 
 func TestViewGear(t *testing.T) {
 	g, p := newGame(t, &seq{}, map[string]string{"a": duel})
-	gear := g.BuildView(p.ID, 9, 5).Gear
+	gear := g.BuildView(p.ID, 9, 5, 0).Gear
 	if len(gear.Slots) != len(entity.Slots) || len(gear.Items) != len(p.Inventory.Items) {
 		t.Fatalf("slots=%d items=%d", len(gear.Slots), len(gear.Items))
 	}

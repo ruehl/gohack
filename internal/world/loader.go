@@ -176,6 +176,11 @@ func ParseLevel(src string) (*Level, []portalDecl, error) {
 				l.Set(p, Floor)
 				l.Start, l.HasStart = p, true
 			default:
+				if def, ok := lightForGlyph(c); ok {
+					l.Set(p, LightSource)
+					l.Lights = append(l.Lights, &Light{Def: &def, Pos: p, On: def.On})
+					continue
+				}
 				tpl, ok := spawnGlyphs[c]
 				if !ok {
 					return nil, nil, fmt.Errorf("unknown map glyph %q at %v", c, p)

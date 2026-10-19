@@ -3,11 +3,16 @@
 package term
 
 import (
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 
 	"gohack/internal/entity"
 	"gohack/internal/game"
 )
+
+// redrawInterval is how often the screen is redrawn to animate lights.
+const redrawInterval = 100 * time.Millisecond
 
 // Run plays the game for the given player until they quit or die.
 func Run(g *game.Game, player entity.EntityID) error {
@@ -20,11 +25,28 @@ func Run(g *game.Game, player entity.EntityID) error {
 	}
 	defer s.Fini()
 
+	// Light animation needs redraws even when no key is pressed.
+	start := time.Now()
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		tick := time.NewTicker(redrawInterval)
+		defer tick.Stop()
+		for {
+			select {
+			case <-tick.C:
+				_ = s.PostEvent(tcell.NewEventInterrupt(nil))
+			case <-done:
+				return
+			}
+		}
+	}()
+
 	var in Input
 	for {
 		w, h := s.Size()
 		mw, mh := viewportSize(w, h)
-		v := g.BuildView(player, mw, mh)
+		v := g.BuildView(player, mw, mh, time.Since(start))
 		if v == nil {
 			return nil
 		}

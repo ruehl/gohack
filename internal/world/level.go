@@ -35,10 +35,12 @@ type Level struct {
 	W, H     int
 	Portals  map[geom.Point]Portal
 	Spawns   []Spawn
+	Lights   []*Light
 	Start    geom.Point // player start; valid only if HasStart
 	HasStart bool
 
 	tiles []TileType
+	rev   uint64
 }
 
 // NewLevel creates a level filled with Void.
@@ -65,7 +67,22 @@ func (l *Level) At(p geom.Point) TileType {
 func (l *Level) Set(p geom.Point, t TileType) {
 	if l.InBounds(p) {
 		l.tiles[p.Y*l.W+p.X] = t
+		l.rev++
 	}
+}
+
+// Rev counts tile changes. Caches derived from the tiles (such as lighting)
+// are stale once it differs from the value they were built at.
+func (l *Level) Rev() uint64 { return l.rev }
+
+// LightAt returns the light source standing on p, or nil.
+func (l *Level) LightAt(p geom.Point) *Light {
+	for _, li := range l.Lights {
+		if li.Pos == p {
+			return li
+		}
+	}
+	return nil
 }
 
 func (l *Level) Walkable(p geom.Point) bool    { return l.At(p).Walkable() }

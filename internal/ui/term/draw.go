@@ -41,6 +41,40 @@ var (
 	}
 )
 
+// cellGlyph and cellStyle say how a tile looks. A light source looks like its
+// own kind of light: dull in its own color when off, glowing once litLight
+// applies its light to it.
+func cellGlyph(c game.Cell) rune {
+	if c.Source != nil {
+		return c.Source.Glyph
+	}
+	return world.Defs[c.Tile].Glyph
+}
+
+func cellStyle(c game.Cell) tcell.Style {
+	if c.Source != nil {
+		col := c.Source.Color
+		dim := func(v uint8) int32 { return int32(v) * 6 / 10 }
+		return tcell.StyleDefault.Foreground(tcell.NewRGBColor(dim(col.R), dim(col.G), dim(col.B))).Bold(true)
+	}
+	return tileStyle[c.Tile]
+}
+
+// ambient is how bright a visible tile is with no light on it, as a fraction of
+// its normal color. Light adds to it per color channel.
+const ambient = 0.7
+
+// litStyle returns style with its foreground scaled by ambient light plus the
+// tile's light color.
+func litStyle(style tcell.Style, light world.RGB) tcell.Style {
+	fg, _, _ := style.Decompose()
+	r, g, b := fg.RGB()
+	scale := func(c int32, l uint8) int32 {
+		return int32(min(255, float64(c)*(ambient+float64(l)/255)))
+	}
+	return style.Foreground(tcell.NewRGBColor(scale(r, light.R), scale(g, light.G), scale(b, light.B)))
+}
+
 func actorStyle(a *game.ActorView) tcell.Style {
 	switch {
 	case a.IsPlayer:
@@ -81,9 +115,9 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 			case c.Actor != nil:
 				s.SetContent(x, y, c.Actor.Glyph, nil, actorStyle(c.Actor))
 			case c.Vis == game.Visible:
-				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, tileStyle[c.Tile])
+				s.SetContent(x, y, cellGlyph(c), nil, litStyle(cellStyle(c), c.Light))
 			case c.Vis == game.Remembered:
-				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, styleRemember)
+				s.SetContent(x, y, cellGlyph(c), nil, styleRemember)
 			}
 		}
 	}
@@ -119,12 +153,15 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 	put(styleText, "DEX %d", h.Attrs.Dexterity)
 	put(styleText, "INT %d", h.Attrs.Intelligence)
 	line++
-	if in.Attacking() {
+	switch {
+	case in.Attacking():
 		put(styleWarn, "Attack which direction?")
-	} else {
+	case in.Toggling():
+		put(styleWarn, "Light which direction?")
+	default:
 		put(styleDim, "WASD/arrows move")
 		put(styleDim, "F attack  E stairs")
-		put(styleDim, "I gear")
+		put(styleDim, "L light  I gear")
 		put(styleDim, "Q quit")
 	}
 

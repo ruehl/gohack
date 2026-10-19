@@ -72,6 +72,16 @@ func describe(ev Event, viewer entity.EntityID) string {
 		if you {
 			return "You take off the " + ev.Text + "."
 		}
+	case EvLightOn:
+		if you {
+			return "You light the " + ev.Text + "."
+		}
+		return actor + " lights a " + ev.Text + "."
+	case EvLightOff:
+		if you {
+			return "You put out the " + ev.Text + "."
+		}
+		return actor + " puts out a " + ev.Text + "."
 	case EvMessage:
 		if you {
 			return ev.Text
