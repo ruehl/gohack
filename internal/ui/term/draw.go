@@ -38,8 +38,25 @@ var (
 		world.DoorClosed: tcell.StyleDefault.Foreground(tcell.NewRGBColor(190, 130, 60)),
 		world.DoorOpen:   tcell.StyleDefault.Foreground(tcell.NewRGBColor(190, 130, 60)),
 		world.Stairs:     tcell.StyleDefault.Foreground(tcell.ColorAqua).Bold(true),
+		// Dull when the light is off; lit by its own light it glows orange.
+		world.LightSource: tcell.StyleDefault.Foreground(tcell.NewRGBColor(150, 110, 60)).Bold(true),
 	}
 )
+
+// ambient is how bright a visible tile is with no light on it, as a fraction of
+// its normal color. Light adds to it per color channel.
+const ambient = 0.7
+
+// litStyle returns style with its foreground scaled by ambient light plus the
+// tile's light color.
+func litStyle(style tcell.Style, light world.RGB) tcell.Style {
+	fg, _, _ := style.Decompose()
+	r, g, b := fg.RGB()
+	scale := func(c int32, l uint8) int32 {
+		return int32(min(255, float64(c)*(ambient+float64(l)/255)))
+	}
+	return style.Foreground(tcell.NewRGBColor(scale(r, light.R), scale(g, light.G), scale(b, light.B)))
+}
 
 func actorStyle(a *game.ActorView) tcell.Style {
 	switch {
@@ -81,7 +98,7 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 			case c.Actor != nil:
 				s.SetContent(x, y, c.Actor.Glyph, nil, actorStyle(c.Actor))
 			case c.Vis == game.Visible:
-				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, tileStyle[c.Tile])
+				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, litStyle(tileStyle[c.Tile], c.Light))
 			case c.Vis == game.Remembered:
 				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, styleRemember)
 			}
@@ -119,12 +136,15 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 	put(styleText, "DEX %d", h.Attrs.Dexterity)
 	put(styleText, "INT %d", h.Attrs.Intelligence)
 	line++
-	if in.Attacking() {
+	switch {
+	case in.Attacking():
 		put(styleWarn, "Attack which direction?")
-	} else {
+	case in.Toggling():
+		put(styleWarn, "Light which direction?")
+	default:
 		put(styleDim, "WASD/arrows move")
 		put(styleDim, "F attack  E stairs")
-		put(styleDim, "I gear")
+		put(styleDim, "L light  I gear")
 		put(styleDim, "Q quit")
 	}
 

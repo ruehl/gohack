@@ -128,3 +128,20 @@ func TestGearMenuNavigation(t *testing.T) {
 		t.Fatal("I closes the screen from the item list too")
 	}
 }
+
+func TestToggleLightWithDirection(t *testing.T) {
+	var in Input
+	v := &game.View{}
+	in.Handle(tcell.NewEventKey(tcell.KeyRune, 'l', 0), v)
+	if !in.Toggling() {
+		t.Fatal("L should wait for a direction")
+	}
+	cmd, _ := in.Handle(tcell.NewEventKey(tcell.KeyRune, 'd', 0), v)
+	if c, ok := cmd.(game.ToggleLightCmd); !ok || c.Dir != geom.E || in.Toggling() {
+		t.Fatalf("got %v toggling=%v", cmd, in.Toggling())
+	}
+	in.Handle(tcell.NewEventKey(tcell.KeyRune, 'l', 0), v)
+	if cmd, quit := in.Handle(tcell.NewEventKey(tcell.KeyEscape, 0, 0), v); cmd != nil || quit || in.Toggling() {
+		t.Fatal("Esc must cancel the light prompt without quitting")
+	}
+}

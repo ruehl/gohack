@@ -11,11 +11,21 @@ import (
 	"gohack/internal/geom"
 )
 
+// prompt is a command waiting for a direction key.
+type prompt uint8
+
+const (
+	promptNone   prompt = iota
+	promptAttack        // "F" pressed
+	promptLight         // "L" pressed
+)
+
 // Input translates key presses into game commands. It holds the UI state: the
-// two-key attack ("F" then a direction) and the gear screen.
+// two-key commands (attack or toggle a light: a letter, then a direction) and
+// the gear screen.
 type Input struct {
-	attacking bool
-	gear      gearMenu
+	prompt prompt
+	gear   gearMenu
 }
 
 // gearMenu is the state of the gear screen: a list of slots and, once a slot
@@ -36,7 +46,10 @@ type choice struct {
 }
 
 // Attacking reports whether the next direction key will attack.
-func (in *Input) Attacking() bool { return in.attacking }
+func (in *Input) Attacking() bool { return in.prompt == promptAttack }
+
+// Toggling reports whether the next direction key will toggle a light.
+func (in *Input) Toggling() bool { return in.prompt == promptLight }
 
 // GearOpen reports whether the gear screen is showing.
 func (in *Input) GearOpen() bool { return in.gear.open }
@@ -157,19 +170,22 @@ func (in *Input) Handle(ev *tcell.EventKey, v *game.View) (cmd game.Command, qui
 		return in.handleGear(ev, &v.Gear), false
 	}
 	if ev.Key() == tcell.KeyEscape {
-		if in.attacking { // Esc cancels attack mode first
-			in.attacking = false
+		if in.prompt != promptNone { // Esc cancels a pending command first
+			in.prompt = promptNone
 			return nil, false
 		}
 		return nil, true
 	}
 	d, isDir := dirOfKey(ev)
-	if in.attacking {
-		in.attacking = false
-		if isDir {
-			return game.AttackCmd{Dir: d}, false
+	if p := in.prompt; p != promptNone {
+		in.prompt = promptNone
+		switch {
+		case !isDir:
+			return nil, false // any other key cancels
+		case p == promptLight:
+			return game.ToggleLightCmd{Dir: d}, false
 		}
-		return nil, false // any other key cancels
+		return game.AttackCmd{Dir: d}, false
 	}
 	if isDir {
 		return game.MoveCmd{Dir: d}, false
@@ -179,7 +195,9 @@ func (in *Input) Handle(ev *tcell.EventKey, v *game.View) (cmd game.Command, qui
 	}
 	switch unicode.ToLower(ev.Rune()) {
 	case 'f':
-		in.attacking = true
+		in.prompt = promptAttack
+	case 'l':
+		in.prompt = promptLight
 	case 'e':
 		return game.UseStairsCmd{}, false
 	case 'i':

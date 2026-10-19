@@ -82,13 +82,13 @@ func TestDoorBlocksSight(t *testing.T) {
 	g, p := newGame(t, &seq{}, map[string]string{"a": arena, "b": second})
 	g.Submit(p.ID, MoveCmd{geom.E})
 	g.Submit(p.ID, MoveCmd{geom.E})
-	v := g.BuildView(p.ID, 21, 9)
+	v := g.BuildView(p.ID, 21, 9, 0)
 	// player at view center (10,4); door at +1; stairs behind the door at +3
 	if v.At(11, 4).Vis != Visible || v.At(13, 4).Vis != Unseen {
 		t.Fatalf("door visible=%v stairs=%v", v.At(11, 4).Vis, v.At(13, 4).Vis)
 	}
 	g.Submit(p.ID, MoveCmd{geom.E}) // open
-	v = g.BuildView(p.ID, 21, 9)
+	v = g.BuildView(p.ID, 21, 9, 0)
 	if v.At(13, 4).Vis != Visible {
 		t.Fatal("stairs should be visible through open door")
 	}
@@ -145,8 +145,8 @@ func TestAttackAndHostileGoblin(t *testing.T) {
 	if !goblinActed {
 		t.Fatal("adjacent hostile goblin should attack after the player's turn")
 	}
-	if g.BuildView(p.ID, 9, 5).Messages[1] != "You hit the goblin for 4." {
-		t.Fatalf("messages = %v", g.BuildView(p.ID, 9, 5).Messages)
+	if g.BuildView(p.ID, 9, 5, 0).Messages[1] != "You hit the goblin for 4." {
+		t.Fatalf("messages = %v", g.BuildView(p.ID, 9, 5, 0).Messages)
 	}
 }
 
@@ -173,7 +173,7 @@ func TestDeath(t *testing.T) {
 	if !p.IsDead() {
 		t.Fatalf("player should be dead, hp=%d", p.HP)
 	}
-	v := g.BuildView(p.ID, 9, 5)
+	v := g.BuildView(p.ID, 9, 5, 0)
 	if !v.Dead || !strings.Contains(strings.Join(v.Messages, "|"), "You die.") {
 		t.Fatalf("dead=%v messages=%v", v.Dead, v.Messages)
 	}
@@ -184,13 +184,13 @@ func TestDeath(t *testing.T) {
 
 func TestViewCenteredAndRemembered(t *testing.T) {
 	g, p := newGame(t, &seq{}, map[string]string{"a": arena, "b": second})
-	v := g.BuildView(p.ID, 11, 7)
+	v := g.BuildView(p.ID, 11, 7, 0)
 	if a := v.At(5, 3).Actor; a == nil || !a.IsPlayer {
 		t.Fatal("player must be at the view center")
 	}
 	g.Submit(p.ID, MoveCmd{geom.E})
 	g.Submit(p.ID, MoveCmd{geom.E})
-	v = g.BuildView(p.ID, 11, 7)
+	v = g.BuildView(p.ID, 11, 7, 0)
 	if a := v.At(5, 3).Actor; a == nil || !a.IsPlayer {
 		t.Fatal("player must stay centered after moving")
 	}

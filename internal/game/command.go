@@ -29,8 +29,12 @@ type EquipCmd struct {
 // UnequipCmd takes off whatever is worn in Slot.
 type UnequipCmd struct{ Slot entity.Slot }
 
-func (MoveCmd) isCommand()      {}
-func (AttackCmd) isCommand()    {}
-func (UseStairsCmd) isCommand() {}
-func (EquipCmd) isCommand()     {}
-func (UnequipCmd) isCommand()   {}
+// ToggleLightCmd switches the light source on the adjacent tile in Dir on or off.
+type ToggleLightCmd struct{ Dir geom.Dir }
+
+func (MoveCmd) isCommand()        {}
+func (AttackCmd) isCommand()      {}
+func (UseStairsCmd) isCommand()   {}
+func (EquipCmd) isCommand()       {}
+func (UnequipCmd) isCommand()     {}
+func (ToggleLightCmd) isCommand() {}

@@ -60,3 +60,23 @@ func TestPortalMustBeOnStairs(t *testing.T) {
 		t.Fatal("expected error for portal not on stairs")
 	}
 }
+
+func TestLightGlyph(t *testing.T) {
+	l, _, err := ParseLevel("id: a\n---\n@*\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := geom.Point{X: 1, Y: 0}
+	li := l.LightAt(p)
+	if l.At(p) != LightSource || li == nil || li.Def.Name != "torch" || !li.On || len(l.Lights) != 1 {
+		t.Fatalf("tile=%v light=%+v", l.At(p), li)
+	}
+	if l.LightAt(geom.Point{}) != nil {
+		t.Fatal("no light at the start tile")
+	}
+	rev := l.Rev()
+	l.Set(p, Floor)
+	if l.Rev() == rev {
+		t.Fatal("Set must advance the revision")
+	}
+}

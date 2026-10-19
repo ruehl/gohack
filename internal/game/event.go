@@ -19,6 +19,8 @@ const (
 	EvMessage    // Text is shown to Actor only
 	EvEquipped   // Text is the item name
 	EvUnequipped // Text is the item name
+	EvLightOn    // actor lit the light source at Pos; Text is its name
+	EvLightOff   // actor put out the light source at Pos; Text is its name
 )
 
 // Event describes something that happened during a turn.

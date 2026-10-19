@@ -27,6 +27,7 @@ type Game struct {
 	occ      map[posKey]entity.EntityID
 	views    map[entity.EntityID]*perception
 	logs     map[entity.EntityID][]string
+	fields   map[*world.Light]*lightField // lighting cache, see lighting.go
 }
 
 // New creates a game over w and spawns the NPCs declared by its levels.
@@ -39,6 +40,7 @@ func New(w *world.World, rng rules.RNG) (*Game, error) {
 		occ:      map[posKey]entity.EntityID{},
 		views:    map[entity.EntityID]*perception{},
 		logs:     map[entity.EntityID][]string{},
+		fields:   map[*world.Light]*lightField{},
 	}
 	for _, id := range w.Order {
 		l := w.Level(id)
@@ -105,6 +107,8 @@ func (g *Game) Submit(actor entity.EntityID, cmd Command) []Event {
 		evs, spent = g.equip(e, c)
 	case UnequipCmd:
 		evs, spent = g.unequip(e, c.Slot)
+	case ToggleLightCmd:
+		evs, spent = g.toggleLight(e, c.Dir)
 	}
 	if spent {
 		evs = append(evs, g.npcPhase()...)
@@ -223,6 +227,23 @@ func (g *Game) unequip(e *entity.Entity, s entity.Slot) ([]Event, bool) {
 	}
 	ev := g.event(EvUnequipped, e, nil, e.Pos)
 	ev.Text = it.Def.Name
+	return []Event{ev}, true
+}
+
+// toggleLight switches the light source on the adjacent tile in dir on or off.
+func (g *Game) toggleLight(e *entity.Entity, dir geom.Dir) ([]Event, bool) {
+	at := e.Pos.Add(dir.Delta())
+	li := g.World.Level(e.Level).LightAt(at)
+	if li == nil {
+		return g.refuse(e, "There is no light there."), false
+	}
+	li.On = !li.On
+	kind := EvLightOff
+	if li.On {
+		kind = EvLightOn
+	}
+	ev := g.event(kind, e, nil, at)
+	ev.Text = li.Def.Name
 	return []Event{ev}, true
 }
 
