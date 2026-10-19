@@ -37,6 +37,9 @@ type Cell struct {
 	Vis   VisState
 	Actor *ActorView
 	Light world.RGB
+	// Source is the light source standing on the tile, for visible and
+	// remembered cells; it decides how the tile looks.
+	Source *world.LightDef
 }
 
 // HUD holds the player's stats for display.
@@ -108,6 +111,11 @@ func (g *Game) BuildView(id entity.EntityID, w, h int, at time.Duration) *View {
 				}
 			case seen.Has(mp.X, mp.Y):
 				c.Vis, c.Tile = Remembered, l.At(mp)
+			}
+			if c.Vis != Unseen && c.Tile == world.LightSource {
+				if li := l.LightAt(mp); li != nil {
+					c.Source = li.Def
+				}
 			}
 		}
 	}

@@ -19,6 +19,9 @@ func TestLoadEmbedded(t *testing.T) {
 	if len(l1.Spawns) != 1 || l1.Spawns[0].Template != "goblin" {
 		t.Fatalf("spawns = %+v", l1.Spawns)
 	}
+	if len(l2.Lights) != 1 || l2.Lights[0].Def.Name != "glowing crystal" {
+		t.Fatalf("level2 lights = %+v", l2.Lights)
+	}
 	// Both ends of the stair exist and point at each other.
 	p1 := l1.Portals[geom.Point{X: 33, Y: 3}]
 	if p1.Target != "level2" || p1.TargetPos != (geom.Point{X: 3, Y: 1}) {
@@ -78,5 +81,30 @@ func TestLightGlyph(t *testing.T) {
 	l.Set(p, Floor)
 	if l.Rev() == rev {
 		t.Fatal("Set must advance the revision")
+	}
+}
+
+func TestCrystalGlyph(t *testing.T) {
+	l, _, err := ParseLevel("id: a\n---\n@&\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	li := l.LightAt(geom.Point{X: 1, Y: 0})
+	if l.At(geom.Point{X: 1, Y: 0}) != LightSource || li == nil || li.Def.Name != "glowing crystal" ||
+		li.Def.Anim != AnimNone || !li.On {
+		t.Fatalf("light = %+v", li)
+	}
+}
+
+func TestLightGlyphsAreUnique(t *testing.T) {
+	taken := map[rune]string{' ': "void", '#': "wall", '.': "floor", '+': "door", '\'': "open door", '>': "stairs", startGlyph: "start"}
+	for g, npc := range spawnGlyphs {
+		taken[g] = "npc " + npc
+	}
+	for id, def := range LightTemplates {
+		if other, dup := taken[def.Glyph]; dup {
+			t.Errorf("light %q glyph %q is already used by %s", id, def.Glyph, other)
+		}
+		taken[def.Glyph] = "light " + id
 	}
 }

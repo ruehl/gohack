@@ -14,11 +14,6 @@ var spawnGlyphs = map[rune]string{
 	'g': "goblin",
 }
 
-// lightGlyphs maps map-file glyphs to light template IDs in LightTemplates.
-var lightGlyphs = map[rune]string{
-	'*': "torch",
-}
-
 const startGlyph = '@'
 
 // portalDecl is a "portal:" header line, resolved after all levels are parsed.
@@ -181,11 +176,7 @@ func ParseLevel(src string) (*Level, []portalDecl, error) {
 				l.Set(p, Floor)
 				l.Start, l.HasStart = p, true
 			default:
-				if id, ok := lightGlyphs[c]; ok {
-					def, ok := LightTemplates[id]
-					if !ok {
-						return nil, nil, fmt.Errorf("unknown light template %q at %v", id, p)
-					}
+				if def, ok := lightForGlyph(c); ok {
 					l.Set(p, LightSource)
 					l.Lights = append(l.Lights, &Light{Def: &def, Pos: p, On: def.On})
 					continue

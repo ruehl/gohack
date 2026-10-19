@@ -38,10 +38,27 @@ var (
 		world.DoorClosed: tcell.StyleDefault.Foreground(tcell.NewRGBColor(190, 130, 60)),
 		world.DoorOpen:   tcell.StyleDefault.Foreground(tcell.NewRGBColor(190, 130, 60)),
 		world.Stairs:     tcell.StyleDefault.Foreground(tcell.ColorAqua).Bold(true),
-		// Dull when the light is off; lit by its own light it glows orange.
-		world.LightSource: tcell.StyleDefault.Foreground(tcell.NewRGBColor(150, 110, 60)).Bold(true),
 	}
 )
+
+// cellGlyph and cellStyle say how a tile looks. A light source looks like its
+// own kind of light: dull in its own color when off, glowing once litLight
+// applies its light to it.
+func cellGlyph(c game.Cell) rune {
+	if c.Source != nil {
+		return c.Source.Glyph
+	}
+	return world.Defs[c.Tile].Glyph
+}
+
+func cellStyle(c game.Cell) tcell.Style {
+	if c.Source != nil {
+		col := c.Source.Color
+		dim := func(v uint8) int32 { return int32(v) * 6 / 10 }
+		return tcell.StyleDefault.Foreground(tcell.NewRGBColor(dim(col.R), dim(col.G), dim(col.B))).Bold(true)
+	}
+	return tileStyle[c.Tile]
+}
 
 // ambient is how bright a visible tile is with no light on it, as a fraction of
 // its normal color. Light adds to it per color channel.
@@ -98,9 +115,9 @@ func draw(s tcell.Screen, v *game.View, in *Input) {
 			case c.Actor != nil:
 				s.SetContent(x, y, c.Actor.Glyph, nil, actorStyle(c.Actor))
 			case c.Vis == game.Visible:
-				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, litStyle(tileStyle[c.Tile], c.Light))
+				s.SetContent(x, y, cellGlyph(c), nil, litStyle(cellStyle(c), c.Light))
 			case c.Vis == game.Remembered:
-				s.SetContent(x, y, world.Defs[c.Tile].Glyph, nil, styleRemember)
+				s.SetContent(x, y, cellGlyph(c), nil, styleRemember)
 			}
 		}
 	}

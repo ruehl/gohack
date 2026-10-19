@@ -31,7 +31,8 @@ var Defs = [numTiles]TileDef{
 	DoorClosed: {Name: "closed door", Glyph: '+', Transparent: false},
 	DoorOpen:   {Name: "open door", Glyph: '\'', Walkable: true, Transparent: true},
 	Stairs:     {Name: "stairs", Glyph: '>', Walkable: true, Transparent: true},
-	// LightSource is a free-standing lamp or brazier: solid, but you can see past it.
+	// LightSource is a free-standing lamp or brazier: solid, but you can see past
+	// it. Its glyph comes from the light's own definition.
 	LightSource: {Name: "light source", Glyph: '*', Transparent: true},
 }
 

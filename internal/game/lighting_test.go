@@ -143,3 +143,37 @@ func TestFlicker(t *testing.T) {
 		t.Fatal("light without animation must keep its color")
 	}
 }
+
+func TestCrystalIsSteadyAndBlue(t *testing.T) {
+	def := world.LightTemplates["crystal"]
+	li := &world.Light{Def: &def, Pos: geom.Point{X: 2, Y: 2}, On: true}
+	for _, at := range []time.Duration{0, 37 * time.Millisecond, time.Second, 90 * time.Second} {
+		if c := lightColor("a", li, at); c != def.Color {
+			t.Fatalf("crystal color changed at %v: %v", at, c)
+		}
+	}
+
+	g, p := lightGame(t, "#####\n#@.&#\n#####\n")
+	v := g.BuildView(p.ID, 9, 5, 0)
+	if c := cellAt(v, p, geom.Point{X: 2, Y: 1}).Light; c.B <= c.R || c.B <= c.G {
+		t.Fatalf("floor next to a crystal should be tinted blue, got %v", c)
+	}
+	if v2 := g.BuildView(p.ID, 9, 5, 5*time.Second); cellAt(v2, p, geom.Point{X: 2, Y: 1}).Light != cellAt(v, p, geom.Point{X: 2, Y: 1}).Light {
+		t.Fatal("crystal light must not animate")
+	}
+}
+
+func TestCellSourceStaysWhenRemembered(t *testing.T) {
+	g, p := lightGame(t, "#######\n#&.@..#\n###+###\n  #.#\n  ###\n")
+	src := geom.Point{X: 1, Y: 1}
+	if s := cellAt(g.BuildView(p.ID, 9, 5, 0), p, src).Source; s == nil || s.Glyph != '&' {
+		t.Fatalf("visible light source should carry its definition, got %+v", s)
+	}
+	g.Submit(p.ID, MoveCmd{geom.S}) // opens the door
+	g.Submit(p.ID, MoveCmd{geom.S})
+	g.Submit(p.ID, MoveCmd{geom.S}) // out of sight of the crystal
+	c := cellAt(g.BuildView(p.ID, 9, 5, 0), p, src)
+	if c.Vis != Remembered || c.Source == nil || c.Source.Glyph != '&' {
+		t.Fatalf("remembered light source should keep its definition: %+v", c)
+	}
+}
