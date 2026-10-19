@@ -21,13 +21,14 @@ type LightDef struct {
 	Radius int // tiles; light fades out towards this distance
 	Anim   Animation
 	On     bool // whether lights of this kind start lit
+	Fixed  bool // nobody, player or NPC, can switch lights of this kind on or off
 }
 
 // LightTemplates maps template IDs to light definitions. Glyphs must be unique
 // and must not clash with other map glyphs.
 var LightTemplates = map[string]LightDef{
 	"torch":   {Name: "torch", Glyph: '*', Color: RGB{255, 160, 60}, Radius: 6, Anim: AnimFlicker, On: true},
-	"crystal": {Name: "glowing crystal", Glyph: '&', Color: RGB{90, 160, 255}, Radius: 5, Anim: AnimNone, On: true},
+	"crystal": {Name: "glowing crystal", Glyph: '&', Color: RGB{90, 160, 255}, Radius: 5, Anim: AnimNone, On: true, Fixed: true},
 }
 
 // lightForGlyph returns the light template whose map glyph is c.

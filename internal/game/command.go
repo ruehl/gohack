@@ -29,7 +29,8 @@ type EquipCmd struct {
 // UnequipCmd takes off whatever is worn in Slot.
 type UnequipCmd struct{ Slot entity.Slot }
 
-// ToggleLightCmd switches the light source on the adjacent tile in Dir on or off.
+// ToggleLightCmd switches the light source on the adjacent tile in Dir on or
+// off, unless it is of a Fixed kind.
 type ToggleLightCmd struct{ Dir geom.Dir }
 
 func (MoveCmd) isCommand()        {}

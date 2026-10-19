@@ -177,3 +177,27 @@ func TestCellSourceStaysWhenRemembered(t *testing.T) {
 		t.Fatalf("remembered light source should keep its definition: %+v", c)
 	}
 }
+
+func TestFixedLightCannotBeSwitched(t *testing.T) {
+	g, p := lightGame(t, "#######\n#@&.g.#\n#######\n")
+	crystal := g.World.Level("a").LightAt(geom.Point{X: 2, Y: 1})
+	msgs := func() string {
+		m := g.BuildView(p.ID, 9, 5, 0).Messages
+		return m[len(m)-1]
+	}
+	g.Submit(p.ID, ToggleLightCmd{geom.E})
+	if !crystal.On || g.Turn != 0 || msgs() != "The glowing crystal can't be switched on or off." {
+		t.Fatalf("player toggle: on=%v turn=%d msg=%q", crystal.On, g.Turn, msgs())
+	}
+	var goblin *entity.Entity
+	for _, id := range g.order {
+		if e := g.Entity(id); !e.IsPlayer {
+			goblin = e
+		}
+	}
+	g.moveTo(goblin, "a", geom.Point{X: 3, Y: 1})
+	g.Submit(goblin.ID, ToggleLightCmd{geom.W})
+	if !crystal.On {
+		t.Fatal("an NPC must not be able to switch the crystal either")
+	}
+}

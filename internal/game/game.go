@@ -237,6 +237,9 @@ func (g *Game) toggleLight(e *entity.Entity, dir geom.Dir) ([]Event, bool) {
 	if li == nil {
 		return g.refuse(e, "There is no light there."), false
 	}
+	if li.Def.Fixed {
+		return g.refuse(e, "The "+li.Def.Name+" can't be switched on or off."), false
+	}
 	li.On = !li.On
 	kind := EvLightOff
 	if li.On {
